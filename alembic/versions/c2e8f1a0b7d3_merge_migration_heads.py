@@ -1,8 +1,7 @@
-"""second_migration
+"""merge the existing migration heads
 
-Revision ID: 3915f83734d8
-Revises: d34b82694cc1
-Create Date: 2026-09-23 08:48:01.282306
+Revision ID: c2e8f1a0b7d3
+Revises: 3915f83734d8, a7c4e1d2f890
 
 """
 from typing import Sequence, Union
@@ -10,8 +9,11 @@ from typing import Sequence, Union
 from alembic import op
 
 
-revision: str = '3915f83734d8'
-down_revision: Union[str, Sequence[str], None] = 'd34b82694cc1'
+revision: str = "c2e8f1a0b7d3"
+down_revision: Union[str, Sequence[str], None] = (
+    "3915f83734d8",
+    "a7c4e1d2f890",
+)
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 

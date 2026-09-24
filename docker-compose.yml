@@ -1,0 +1,36 @@
+# Estrutura de docker-compose para la aplicación FastAPI y PostgreSQL (Globalmente)
+services:  # Es la sección principal donde defines todos los contenedores independientes que van a conformar tu aplicación (en este caso, la base de datos y la API).
+
+  # 1. Contenedor de la Base de Datos con Healthcheck
+  db:
+    image: postgres:15-alpine # Declaración: Indica la imagen oficial de Docker que se descargará para este contenedor - Usa PostgreSQL en su versión 15 sobre la distribución alpine (una versión de Linux ultraligera y optimizada para contenedores).
+    container_name: postgres_db
+    restart: always #Declaración: Es una política de reinicio. Le ordena a Docker que si la computadora se reinicia, o si el contenedor sufre un fallo y se apaga inesperadamente, debe encenderlo automáticamente de nuevo.
+    env_file: #Declaración: Le indica a Docker que lea un archivo externo de variables de entorno para configurar este contenedor.
+      - .env # Especifica que el archivo a leer es el .env ubicado en la raíz del proyecto (donde tienes tus contraseñas y credenciales).
+    volumes: #Declaración: Mapea el almacenamiento interno del contenedor hacia un volumen persistente de tu PC.
+      - pgdata:/var/lib/postgresql/data #- pgdata:/var/lib/postgresql/data: Guarda todos los archivos físicos de la base de datos dentro del volumen llamado pgdata. Gracias a esto, aunque destruyas o apagues el contenedor, tus tablas y datos no se pierden.
+    ports: # Declaración: Abre un puente o túnel entre tu computadora física (host) y el contenedor.
+      - "5433:5432" #- "5433:5432": El primer número (5433) es el puerto expuesto en tu Windows (para que herramientas como pgAdmin puedan entrar), y el segundo (5432) es el puerto interno donde PostgreSQL escucha por defecto dentro del contenedor
+    healthcheck: # Declaración: Es un sistema de "monitoreo médico" para el contenedor. Le enseña a Docker cómo saber si la base de datos ya está 100% lista para trabajar.
+      test: ["CMD-SHELL", "pg_isready -U admin -d catalogo_db"] #test: ["CMD-SHELL", "pg_isready -U admin -d catalogo_db"]: El comando interno que ejecuta Docker repetidamente para verificar si Postgres ya acepta conexiones.
+      interval: 5s # El tiempo de espera entre cada intento de revisión (cada 5 segundos).
+      timeout: 5s # El tiempo máximo que espera Docker a que el comando responda antes de considerarlo un intento fallido.
+      retries: 5 # La cantidad de oportunidades que se le dan al servicio antes de declararlo como fallido.
+
+  # 2. Contenedor de tu API (FastAPI)
+  api:
+    build: . # Declaración: A diferencia de la base de datos que usa una imagen ya hecha de internet (image), aquí le ordenas a Docker que construya una imagen personalizada leyendo el código de tu proyecto local usando el Dockerfile que está en la carpeta actual (.)
+    container_name: fastapi_app # Declaración: El nombre fijo asignado al contenedor de tu aplicación de FastAPI.
+    restart: always
+    env_file:
+      - .env # Carga las mismas variables de entorno para que tu código de Python (vía os.getenv) pueda leer la URL de conexión a la base de datos.
+    ports:
+      - "8080:8000" # Expone el puerto 8000 interno del contenedor (donde FastAPI escucha por defecto) hacia el puerto 8080 de tu computadora física (host). Así, cuando abras http://localhost:8080 en tu navegador, estarás accediendo a la API.
+    depends_on: # Declaración: Controla el orden de encendido de los contenedores
+      db: 
+        condition: service_healthy  # Espera a que el healthcheck de la base de datos dé verde
+
+# 3. Declaración del volumen de persistencia
+volumes: # Se ubica al final del archivo y sirve para declarar los volúmenes globales que los contenedores usarán para almacenar información de forma persistente (que no se borre si el contenedor se apaga).
+  pgdata:

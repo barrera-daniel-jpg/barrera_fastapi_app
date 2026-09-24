@@ -1,3 +1,5 @@
+from contextlib import asynccontextmanager
+
 from fastapi import Depends, FastAPI, HTTPException, status
 from pydantic import BaseModel, Field, field_validator
 from sqlmodel import select
@@ -6,20 +8,26 @@ from src.shared.database.session_db import SessionDep, get_session
 from enum import Enum
 
 
-app = FastAPI()
+# 1. EVENTO DE INICIO (Preparado para Alembic)
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    yield
+
+
+app = FastAPI(title="API de Productos", lifespan=lifespan)
 
 # Clase para definir los productos permitidos
 class AllowedProducts(str, Enum):
-    MONITORES = "monitores"
-    MOUSE = "mouse"
-    TECLADO = "teclado"
+    MONITOR = "monitores"
+    MOUSE = "mouses"
+    TECLADO = "teclados"
 
 # Clase para crear un nuevo producto con validaciones
 class CreateProduct(BaseModel):
-    name: AllowedProducts = Field(..., min_length=1, max_length=100)
+    name: str = Field(..., )
     price: float = Field(..., gt=10000)
     quantity: int = Field(..., ge=0)
-    category: str = Field(..., )
+    category: AllowedProducts = Field(..., min_length=1, max_length=100)
 
 # Validador que asegura que el nombre del producto esté en minúsculas y sin espacios antes de la validación
 # Normalizador para el Enum (name)
